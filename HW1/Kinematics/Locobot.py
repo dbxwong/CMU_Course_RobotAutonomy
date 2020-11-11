@@ -23,7 +23,8 @@ class Locobot:
 		'''Note: you will get this from the URDF (interbotix_locobot_description.urdf).
 		For example, in the urdf under each joint you will see: (<axis xyz="0 1 0"/>)
 		'''
-		self.axis= [] 
+		self.axis= [[0,0,1],[0,1,0],[0,1,0],[0,1,0],[-1,0,0],[0,1,0]]
+			 
 
 		#Set base coordinate frame as identity - NOTE: don't change
 		self.Tbase= [[1,0,0,0],
@@ -56,11 +57,30 @@ class Locobot:
 		'''
 		self.q[0:-1]=ang
 		# TODO: implement your Forward Kinematics here		
-		
-		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints rotate about the z axis!
-				
+		for i in range(len(self.q)):
+			self.Tjoint[i] = rt.rpyxyz2H(np.array(self.axis[i]) * self.q[i], [0, 0, 0])
+
+		if i == 0:
+			self.Tcurr[i] = np.matmul(self.Tlink[i],self.Tjoint[i]
+
+		else:
+			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i-1],self.Tlink[i]),self.Tjoint[i])
+
+		# z-axis only example
+            	# self.Tjoint[i] = [[math.cos(self.q[i]), -math.sin(self.q[i]), 0, 0],
+            	# 				  [math.sin(self.q[i]), math.cos(self.q[i]), 0, 0],
+            	# 				  [0, 0, 1, 0],
+            	#				  [0, 0, 0, 1]]
+
+		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints rotate about the z axis!			
 		# TODO: Compute Jacobian matrix		
-		
+		for i in xrange(len(self.Tcurr)-1):
+			p=self.Tcurr[-1][0:3.3]-self.Tcurr[i][0:3,3] # position of end effector - position of ith joint
+			axis = np.argwhere(self.axis[i])[0][0]	     # idea from mervo
+			a=self.Tcurr[i][0:3, axis]                   # ##-axis of the i-th joint (axis)
+			self.J[0:3,i]=np.cross(a,p)		     
+			self.J[3:7,i]=a
+
 		return self.Tcurr, self.J
 
 
