@@ -61,7 +61,7 @@ class Locobot:
 			self.Tjoint[i] = rt.rpyxyz2H(np.array(self.axis[i]) * self.q[i], [0, 0, 0])
 
 		if i == 0:
-			self.Tcurr[i] = np.matmul(self.Tlink[i],self.Tjoint[i]
+			self.Tcurr[i] = np.matmul(self.Tlink[i],self.Tjoint[i])
 
 		else:
 			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i-1],self.Tlink[i]),self.Tjoint[i])
@@ -74,7 +74,7 @@ class Locobot:
 
 		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints rotate about the z axis!			
 		# TODO: Compute Jacobian matrix		
-		for i in xrange(len(self.Tcurr)-1):
+		for i in range(len(self.Tcurr)-1):
 			p=self.Tcurr[-1][0:3.3]-self.Tcurr[i][0:3,3] # position of end effector - position of ith joint
 			axis = np.argwhere(self.axis[i])[0][0]	     # idea from mervo
 			a=self.Tcurr[i][0:3, axis]                   # ##-axis of the i-th joint (axis)
@@ -83,14 +83,14 @@ class Locobot:
 
 		return self.Tcurr, self.J
 
-
+	'''
 	def IterInvKin(self,ang,TGoal):
-		'''
-		inputs: starting joint angles (ang), target end effector pose (TGoal)
+		
+		#inputs: starting joint angles (ang), target end effector pose (TGoal)
 
-		outputs: computed joint angles to achieve desired end effector pose, 
-		Error in your IK solution compared to the desired target
-		'''	
+		#outputs: computed joint angles to achieve desired end effector pose, 
+		#Error in your IK solution compared to the desired target
+			
 		self.ForwardKin(ang)
 		
 		Err=[0,0,0,0,0,0] # error in position and orientation, initialized to 0
@@ -104,6 +104,7 @@ class Locobot:
 			#TODO: Recompute forward kinematics for new angles			
 		
 		return self.q[0:-1], Err
+	'''
 
 
 	def PlotSkeleton(self,ang):
