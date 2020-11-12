@@ -37,9 +37,9 @@ class Locobot:
 		self.Tjoint=[] #Transforms for each joint (init eye)
 		self.Tcurr=[] #Coordinate frame of current (init eye)
 		for i in range(len(self.Rdesc)):
-			self.Tlink.append(rt.rpyxyz2H(self.Rdesc[i][0:3],self.Rdesc[i][3:6]))
-			self.Tcurr.append([[1,0,0,0],[0,1,0,0],[0,0,1,0.],[0,0,0,1]])
-			self.Tjoint.append([[1,0,0,0],[0,1,0,0],[0,0,1,0.],[0,0,0,1]])
+			self.Tlink.append(rt.rpyxyz2H(self.Rdesc[i][0:3], self.Rdesc[i][3:6]))
+            		self.Tcurr.append([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0.], [0, 0, 0, 1]])
+            		self.Tjoint.append([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0.], [0, 0, 0, 1]])
 
 		self.Tlinkzero=rt.rpyxyz2H(self.Rdesc[0][0:3],self.Rdesc[0][3:6])
 		self.Tlink[0]=np.matmul(self.Tbase,self.Tlink[0])
@@ -62,11 +62,11 @@ class Locobot:
 
 		if i == 0:
 			self.Tcurr[i] = np.array(self.Tcurr[i])			
-			self.Tcurr[i] = np.matmul(self.Tlink[i],self.Tjoint[i])
+			self.Tcurr[i] = np.matmul(self.Tlink[i], self.Tjoint[i])
 
 		else:
 			self.Tcurr[i] = np.array(self.Tcurr[i])			
-			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i-1],self.Tlink[i]),self.Tjoint[i])
+			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i - 1], self.Tlink[i]), self.Tjoint[i])
 
 		# z-axis only example
             	# self.Tjoint[i] = [[math.cos(self.q[i]), -math.sin(self.q[i]), 0, 0],
@@ -74,16 +74,17 @@ class Locobot:
             	# 				  [0, 0, 1, 0],
             	#				  [0, 0, 0, 1]]
 
-		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints rotate about the z axis!			
-		# TODO: Compute Jacobian matrix		
+		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints 			rotate about the z axis!			
+		# TODO: Compute Jacobian matrix	
+	
 		for i in range(len(self.Tcurr)-1):
-			self.Tcurr[i] = np.array(self.Tcurr[i])
-			p = self.Tcurr[-1][0:3, 3] - self.Tcurr[i][0:3, 3]  # adapted from lecture 2 slide 25
-            		axis = np.argwhere(self.axis[i])[0][0]  # Define axis to use as joint axis - idea from mervo
+			self.Tcurr[i] = np.array(self.Tcurr[i])			
+			p = self.Tcurr[-1][0:3, 3] - self.Tcurr[i][0:3, 3]  # From all 3 elements, return index 3
+            		axis = np.argwhere(self.axis[i])[0][0]  # Define axis to use as joint axis
             		a = self.Tcurr[i][0:3, axis]  
             		self.J[0:3, i] = np.cross(a, p)
             		self.J[3:7, i] = a
-			
+				
 		return self.Tcurr, self.J
 
 	'''
