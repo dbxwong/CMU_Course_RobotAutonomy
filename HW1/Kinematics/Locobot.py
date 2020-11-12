@@ -23,7 +23,13 @@ class Locobot:
 		'''Note: you will get this from the URDF (interbotix_locobot_description.urdf).
 		For example, in the urdf under each joint you will see: (<axis xyz="0 1 0"/>)
 		'''
-		self.axis= [[0,0,1],[0,1,0],[0,1,0],[0,1,0],[-1,0,0],[0,1,0]]
+		self.axis=  ([[0, 0, 1],
+                      [0, 1, 0],
+                      [0, 1, 0],
+                      [0, 1, 0],
+                      [-1, 0, 0],
+                      [0, 1, 0]
+                      ])
 			 
 
 		#Set base coordinate frame as identity - NOTE: don't change
@@ -60,13 +66,13 @@ class Locobot:
 		for i in range(len(self.q)):
 			self.Tjoint[i] = rt.rpyxyz2H(np.array(self.axis[i]) * self.q[i], [0, 0, 0])
 
-		if i == 0:
-			self.Tcurr[i] = np.array(self.Tcurr[i])			
-			self.Tcurr[i] = np.matmul(self.Tlink[i], self.Tjoint[i])
+			if i == 0:
+				self.Tcurr[i] = np.array(self.Tcurr[i])			
+				self.Tcurr[i] = np.matmul(self.Tlink[i], self.Tjoint[i])
 
-		else:
-			self.Tcurr[i] = np.array(self.Tcurr[i])			
-			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i - 1], self.Tlink[i]), self.Tjoint[i])
+			else:
+				self.Tcurr[i] = np.array(self.Tcurr[i])			
+				self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i - 1], self.Tlink[i]), self.Tjoint[i])
 
 		# z-axis only example
             	# self.Tjoint[i] = [[math.cos(self.q[i]), -math.sin(self.q[i]), 0, 0],
