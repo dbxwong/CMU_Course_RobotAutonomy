@@ -93,7 +93,7 @@ class Locobot:
 				
 		return self.Tcurr, self.J
 
-	'''
+	
 	def IterInvKin(self,ang,TGoal):
 		
 		#inputs: starting joint angles (ang), target end effector pose (TGoal)
@@ -105,15 +105,19 @@ class Locobot:
 		Err=[0,0,0,0,0,0] # error in position and orientation, initialized to 0
 		for s in range(10000):			
 			#TODO: Compute rotation error
-			rErrR = np.matmul(TGoal[0:3,0:3],np.transpose(self.Tcurr[-1][0:3,0:3]))
-			rErrR,rErrAng=rt.R2axisang(rErrR)
+			rErrR = np.matmul(TGoal[0:3, 0:3], np.transpose(self.Tcurr[-1][0:3, 0:3])) # R_err = R_goal * RT_ECurr - slide 45
 			
-			if rErrAng>-0.1:
-				rErrAng=0.1
-			if rErrAng<-0.1:
-				rErrAng=-0.1
+			rErrAxis, rErrAng = rt.R2axisang(rErrR)  # Convert to axis angle form
 
-			rErr = [rErrAxis[0]*rErrAng, rErrAxis[1]*rErrAng, rErrAng[2]*rErrAng]
+			#limit rotation angle
+
+			if rErrAng>-0.1:
+				rErrAng=0.1 * np.pi/180 # 0.1 degrees
+			if rErrAng<-0.1:
+				rErrAng=-0.1  * np.pi/180
+
+			rErr = [rErrAxis[0] * rErrAng, rErrAxis[1] * rErrAng, rErrAxis[2] * rErrAng]
+
 			
 			#TODO: Compute position error
 			xErr = TGoal[0:3,3]-self.Tcurr[-1][0:3,3]
@@ -123,13 +127,12 @@ class Locobot:
 			#TODO: Update joint angles 
 			Err[0:3]=xErr
 			Err[3:6]=rErr
-			self.q[0:7]=self.q[0:7] + np.matmul(np.matmul(np.transpose(self.J), np.linalg.inv(np.matmul(self.J,np.transpose(self.J)))),Err)
-
+			self.q[0:-1] = self.q[0:-1] + 0.1 * np.matmul(np.transpose(self.J), Err) #last line of lect 2 slide 33 for jacobian transpose approach
+ 
 			#TODO: Recompute forward kinematics for new angles
-			self.ForwardKin(self.q[0:7])			
+			self.ForwardKin(self.q[0:-1])			
 		
 		return self.q[0:-1], Err
-	'''	
 
 
 	def PlotSkeleton(self,ang):
