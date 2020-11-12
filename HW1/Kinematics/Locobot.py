@@ -61,9 +61,11 @@ class Locobot:
 			self.Tjoint[i] = rt.rpyxyz2H(np.array(self.axis[i]) * self.q[i], [0, 0, 0])
 
 		if i == 0:
+			self.Tcurr[i] = np.array(self.Tcurr[i])			
 			self.Tcurr[i] = np.matmul(self.Tlink[i],self.Tjoint[i])
 
 		else:
+			self.Tcurr[i] = np.array(self.Tcurr[i])			
 			self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i-1],self.Tlink[i]),self.Tjoint[i])
 
 		# z-axis only example
@@ -75,7 +77,7 @@ class Locobot:
 		# TODO: Compute current joint and end effector coordinate frames (self.Tjoint). Remember than not all joints rotate about the z axis!			
 		# TODO: Compute Jacobian matrix		
 		for i in range(len(self.Tcurr)-1):
-
+			self.Tcurr[i] = np.array(self.Tcurr[i])
 			p = self.Tcurr[-1][0:3, 3] - self.Tcurr[i][0:3, 3]  # adapted from lecture 2 slide 25
             		axis = np.argwhere(self.axis[i])[0][0]  # Define axis to use as joint axis - idea from mervo
             		a = self.Tcurr[i][0:3, axis]  
@@ -88,7 +90,6 @@ class Locobot:
 	def IterInvKin(self,ang,TGoal):
 		
 		#inputs: starting joint angles (ang), target end effector pose (TGoal)
-
 		#outputs: computed joint angles to achieve desired end effector pose, 
 		#Error in your IK solution compared to the desired target
 			
@@ -97,15 +98,31 @@ class Locobot:
 		Err=[0,0,0,0,0,0] # error in position and orientation, initialized to 0
 		for s in range(10000):			
 			#TODO: Compute rotation error
-						
+			rErrR = np.matmul(TGoal[0:3,0:3],np.transpose(self.Tcurr[-1][0:3,0:3]))
+			rErrR,rErrAng=rt.R2axisang(rErrR)
+			
+			if rErrAng>-0.1:
+				rErrAng=0.1
+			if rErrAng<-0.1:
+				rErrAng=-0.1
+
+			rErr = [rErrAxis[0]*rErrAng, rErrAxis[1]*rErrAng, rErrAng[2]*rErrAng]
+			
 			#TODO: Compute position error
+			xErr = TGoal[0:3,3]-self.Tcurr[-1][0:3,3]
+			if np.linalg.norm(xErr)>0.01:
+				xErr = xErr * 0.01/np.linalg.norm(xErr)
 						
 			#TODO: Update joint angles 
-			
-			#TODO: Recompute forward kinematics for new angles			
+			Err[0:3]=xErr
+			Err[3:6]=rErr
+			self.q[0:7]=self.q[0:7] + np.matmul(np.matmul(np.transpose(self.J), np.linalg.inv(np.matmul(self.J,np.transpose(self.J)))),Err)
+
+			#TODO: Recompute forward kinematics for new angles
+			self.ForwardKin(self.q[0:7])			
 		
 		return self.q[0:-1], Err
-	'''
+	'''	
 
 
 	def PlotSkeleton(self,ang):
