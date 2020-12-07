@@ -35,10 +35,43 @@ def main(args):
 	qInit=[-80.*deg_to_rad, 0., 0., 0., 0.] 
 	qGoal=[0., 60*deg_to_rad, -75*deg_to_rad, -75*deg_to_rad, 0.] 
 
+	plan = []
+    #Write the code for querying the PRM here and return a path from start to goal
+	neighInit=[]
+	neighGoal=[]
+	heuristic=[]
+	parent=[]
+	for i in range(len(prmVertices)):
+		if np.linalg.norm(np.array(prmVertices[i])-np.array(qInit))<2.:
+			if not mybot.DetectCollisionEdge(prmVertices[i], qInit, pointsObs, axesObs):
+				neighInit.append(i)
+		if np.linalg.norm(np.array(prmVertices[i])-np.array(qGoal))<2.:
+			if not mybot.DetectCollisionEdge(prmVertices[i], qGoal, pointsObs, axesObs):
+				neighGoal.append(i)
+	heuristic.append(np.linalg.norm(np.array(prmVertices[i])-np.array(qGoal)))
+	parent.append([])
+	activenodes= neighInit
+	bestscore=0
 
-	plan = []	
-	""" Write the code for querying the PRM here and return a path from start to goal """
+	while bestscore<1000 and not any([g in activenodes for g in neighGoal]):
+		bestscore=1000
+	for i in range(len(activenodes)):
+		for j in range(len(prmEdges[activenodes[i]])):
+			if prmEdges[activenodes[i]][j] not in activenodes:
+				if heuristic[prmEdges[activenodes[i]][j]]<bestscore:
+					bestscore=heuristic[prmEdges[activenodes[i]][j]]
+					bestcandi=prmEdges[activenodes[i]][j]
+					bestparent=activenodes[i]
+	if bestscore<1000:
+		activenodes.append(bestcandi)
+		parent[bestcandi]= bestparent
 
+	plan= [activenodes[-1]]
+	prevstep= parent[plan[0]]
+	while prevstep:
+		plan.insert(0, prevstep)
+		prevstep = parent[plan[0]]
+	print(f'Plan: {plan}')
 
 	MyPlan=[]
 	MyPlan.append(qInit)

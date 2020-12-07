@@ -58,15 +58,15 @@ def BlockDesc2Points(H, Dim):
 
 def CheckPointOverlap(pointsA,pointsB,axis):
     # check if points are overlapping (slide 53 lect 6)
-    projPointsA = np.matmul(axis,np.transpose(pointsA))
-    projPointsB = np.matmul(axis,np.transpose(pointsB))
-
+	projPointsA = np.matmul(axis,np.transpose(pointsA))
+	projPointsB = np.matmul(axis,np.transpose(pointsB))
+    
     # check overlap
     maxA = np.max(projPointsA)
     minA = np.min(projPointsA)
     maxB = np.max(projPointsB)
     minB = np.min(projPointsB)
-
+    
     if maxA <= maxB and maxA >= minB:
         return True
 
