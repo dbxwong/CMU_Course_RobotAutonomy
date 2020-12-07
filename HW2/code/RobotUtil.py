@@ -57,10 +57,10 @@ def BlockDesc2Points(H, Dim):
 
 
 def CheckPointOverlap(pointsA,pointsB,axis):
-    # check if points are overlapping (slide 53 lect 6)
-	projPointsA = np.matmul(axis,np.transpose(pointsA))
-	projPointsB = np.matmul(axis,np.transpose(pointsB))
-    
+#check if points are overlapping (slide 53 lect 6)
+    projPointsA = np.matmul(axis,np.transpose(pointsA))
+    projPointsB = np.matmul(axis,np.transpose(pointsB))
+
     # check overlap
     maxA = np.max(projPointsA)
     minA = np.min(projPointsA)
@@ -82,13 +82,13 @@ def CheckPointOverlap(pointsA,pointsB,axis):
     return False
 
 def CheckBoxBoxCollision(pointsA,axesA,pointsB,axesB):
-	# check collision between two boxes (dist betw. centres > sum of 2 radii for non collision state)
-	if np.linalg.norm(pointsA[0] - pointsB[0]) > (np.linalg.norm(pointsA[0] - pointsA[1]) + np.linalg.norm(pointsB[0] - pointsB[1])):
-        return False
+    # check collision between two boxes (dist betw. centres > sum of 2 radii for non collision state)
+    if np.linalg.norm(pointsA[0] - pointsB[0]) > (np.linalg.norm(pointsA[0] - pointsA[1]) + np.linalg.norm(pointsB[0] - pointsB[1])):
+            return False
 
-    # surface normal check
+    #surface normal check        
     for i in range(3):
-        if not CheckPointOverlap(pointsA, pointsB, axesA[i]):  # check all axes of object A
+        if not CheckPointOverlap(pointsA, pointsB, axesA[i]):
             return False
 
     for j in range(3):
