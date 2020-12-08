@@ -87,7 +87,22 @@ class Locobot:
 	def ForwardKin(self,ang):
 		# Put you FK code from Homework 1 here
 		self.q[0:-1]=ang		
+		for i in range(len(self.q)):
+			self.Tjoint[i] = rt.rpyxyz2H(np.array(self.axis[i]) * self.q[i], [0, 0, 0])
 		
+			if i == 0:
+				self.Tcurr[i] = np.matmul(self.Tlink[i], self.Tjoint[i])
+			else:
+				self.Tcurr[i] = np.matmul(np.matmul(self.Tcurr[i - 1], self.Tlink[i]), self.Tjoint[i])
+
+		for i in range(len(self.Tcurr) - 1):
+			# pos of end effector - pos of ith joint
+			p = self.Tcurr[-1][0:3, 3] - self.Tcurr[i][0:3, 3]  # From all 3 elements, return index 3
+			axis = np.argwhere(self.axis[i])[0][0]  # Define axis to use as joint axis
+			a = self.Tcurr[i][0:3, axis]  # Lecture, about xx axis
+			self.J[0:3, i] = np.cross(a, p)
+			self.J[3:7, i] = a
+			
 		return self.Tcurr, self.J
 
 
@@ -95,26 +110,64 @@ class Locobot:
 		# Put you IK code from Homework 1 here
 
 		self.ForwardKin(ang)		
-		
+		Err = [0, 0, 0, 0, 0, 0]  # error in position and orientation, initialized to 0
+
+		for s in range(1000):
+			print(f'Step: {s}')
+			# TODO: Compute rotation error (radian)
+			rErrR = np.matmul(TGoal[0:3, 0:3], np.transpose(self.Tcurr[-1][0:3, 0:3]))  # R_err = R_goal * RT_ECurr
+			rErrAxis, rErrAng = rt.R2axisang(rErrR)  # Convert to axis angle form
+			print(f'Pos Error(m): {rErrAxis}, Rotation Error(rad): {rErrAng}')
+
+            # Limit rotation angle
+			if rErrAng > 0.1:  # 0.1 rad ~ 5.7 deg
+				rErrAng = 0.1 * np.pi / 180  # 0.1 deg 
+			if rErrAng < -0.1:
+				rErrAng = - 0.1 * np.pi / 180
+				
+			rErr = [rErrAxis[0] * rErrAng, rErrAxis[1] * rErrAng, rErrAxis[2] * rErrAng]
+			# TODO: Compute position error (meter)
+            # Compute and limit translation error
+			xErr = TGoal[0:3, 3] - self.Tcurr[-1][0:3, 3]
+			if np.linalg.norm(xErr) > 0.01:
+				xErr = xErr * 0.01 / np.linalg.norm(xErr)
+				
+			Err[0:3] = xErr
+			Err[3:6] = rErr
+			self.q[0:-1] = self.q[0:-1] + 0.1 * np.matmul(np.transpose(self.J), Err)
+			self.ForwardKin(self.q[0:-1])
+
 		return self.q[0:-1], Err
 
 
 	def SampleRobotConfig(self):
 		# implement random sampling of robot joint configurations
 		q=[]		
+		assert len(self.qmax) == len(self.qmin)
 		
+		for i in range(len(self.qmax)):
+			q_1 = np.random.uniform(self.qmin[i], self.qmax[i])
+			q.append(q_1)
 		return q
 
 
 	def CompCollisionBlockPoints(self,ang):
 		# Use your FK implementation here to compute collision boxes for the robot arm 
-		
+		self.ForwardKin(ang)
+		for i in range(len(self.Cdesc)):
+			self.Tcoll[i] = np.matmul(self.Tcurr[self.Cidx[i]], self.Tblock[i])  # Joint frame and local box transform
+			self.Cpoints[i], self.Caxes[i] = rt.BlockDesc2Points(self.Tcoll[i], self.Cdim[i])
+
 		pass
 
 		
 	def DetectCollision(self, ang, pointsObs, axesObs):	
 		# implement collision detection using CompCollisionBlockPoints() and rt.CheckBoxBoxCollision()
-
+		self.CompCollisionBlockPoints(ang)
+		
+		for i in range(len(self.Cdesc)):
+			if rt.CheckBoxBoxCollision(self.Cpoints[i], self.Caxes[i], pointsObs[i], axesObs[i]):
+				return True				
 		return False
 
 

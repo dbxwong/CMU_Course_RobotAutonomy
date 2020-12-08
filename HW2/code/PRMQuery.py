@@ -10,7 +10,7 @@ import pickle
 import matplotlib.pyplot as plt
 import random
 
-from pyrobot import Robot
+#from pyrobot import Robot
 import Locobot
 import RobotUtil as rt
 
@@ -42,7 +42,7 @@ def main(args):
 	heuristic=[]
 	parent=[]
 	for i in range(len(prmVertices)):
-		if np.linalg.norm(np.array(prmVertices[i])-np.array(qInit))<2.:
+		if np.linalg.norm(np.array(prmVertices[i]) - np.array(qInit)) < 2.:
 			if not mybot.DetectCollisionEdge(prmVertices[i], qInit, pointsObs, axesObs):
 				neighInit.append(i)
 		if np.linalg.norm(np.array(prmVertices[i])-np.array(qGoal))<2.:

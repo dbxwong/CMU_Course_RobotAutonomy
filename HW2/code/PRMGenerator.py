@@ -46,7 +46,8 @@ pointsObs.append(envpoints), axesObs.append(envaxes)
 prmVertices=[]
 #Create PRM - generate collision-free vertices
 start = time.time()
-num_samples = 2500 # you might need to change this value
+num_samples = 500 # you might need to change this value
+radius_threshold = 2.0
 
 for i in range(num_samples):
 	# You will need to implement the sampler and collision detection
@@ -56,7 +57,13 @@ for i in range(num_samples):
 
 prmEdges=[]
 #Create PRM - generate collision-free edges (and check for line-line collisions)
-
+for j in range(len(prmVertices)-1):
+	if np.linalg.norm(np.array(prmVertices[-1])-np.array(prmVertices[j])) < radius_threshold:
+		if not mybot.DetectCollisionEdge(prmVertices[-1],prmVertices[j],pointsObs,axesObs):
+			prmEdges[-1].append[j]
+			prmEdges[j].append(len(prmVertices)-1)
+print(prmVertices)
+print(prmEdges)
 
 # Save the PRM
 f = open("myPRM.p", 'wb')
