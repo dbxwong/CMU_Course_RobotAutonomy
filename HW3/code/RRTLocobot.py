@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from os.path import dirname, join, abspath
 
-from pyrobot import Robot
+#from pyrobot import Robot
 import RobotUtil as rt
 import Locobot
 
@@ -56,8 +56,7 @@ def main(args):
 	num_grasp_points = 5 # You can adjust the number of grasp points you want to sample here
 	while len(QGoal)<num_grasp_points:
 		# TODO: Sample grasp points here, get their joint configurations, and check if they are valid
-		pass
-
+		pass 
 
 	#Create RRT graph to find path to a goal configuration
 	rrtVertices=[]
@@ -70,19 +69,48 @@ def main(args):
 	# Change these two hyperparameters as needed
 	thresh=1.5 
 	num_samples = 3000
+	goal_thresh = 0.025
+	goal_bias = 0.025
 
 	FoundSolution=False
+	
+	for qGoal in QGoal:
+		if FoundSolution:
+			return
 
 	while len(rrtVertices)<num_samples and not FoundSolution:
 		print(len(rrtVertices))
-		# Use your sampler and collision detection from homework 2
-		qRand=mybot.SampleRobotConfig()
 
 		# NOTE: Remember to add a goal bias when you sample
+		if np.random.uniform(0,1) < goal_bias:  
+			qRand=qGoal
+		
+		else:
+			# Use your sampler and collision detection from homework 2
+			qRand=mybot.SampleRobotConfig()
 
 		# TODO: Implement your RRT planner here	
+		idNear = FindNearest(rrtVertices,qRand) #find qN
+		qNear = rrtVertices[idNear]
 
-		
+		#limit step size for qC
+		if np.linalg.norm(qRand-qNear) > thresh:
+			qConnect = np.array(qNear) + (thresh * (np.array(qRand)-np.array(qNear))/np.linalg.norm(qRand-qNear))
+
+		else:
+			qConnect = qRand
+
+		if not mybot.DetectCollision(qConnect,qNear,pointsObs, axesObs):
+			rrtVertices.append(qConnect) # expand tree
+			rrtEdges.append(idNear) # id of parent vertex
+
+		# Attempt to connect to goal
+		idNear = FindNearest(rrtVertices,qGoal) # find nearest point to goal
+		if np.linalg.norm(qGoal-rrtVertices[idNear]) < goal_thresh and not mybot.DetectCollision(qGoal,qNear,pointsObs,axesObs):
+			rrtVertices.append(qGoal)
+			rrtEdges.append(idNear)
+			break
+
 	if FoundSolution:
 
 		# Extract path - TODO: add your path from your RRT after a solution has been found
@@ -92,7 +120,27 @@ def main(args):
 		# Path shortening - TODO: implement path shortening in the for loop below
 		num_iterations = 150 # change this hyperparameter as needed
 		for i in range(num_iterations):
-			pass
+			
+			# Sample vertices
+			anchorA=np.random.randint(0,len(plan)-2) 
+			anchorB=np.random.randint(anchorA+1,len(plan)-1) 
+			
+			# Sample shift along edges
+			shiftA=np.random.uniform(0,1)
+			shiftB=np.random.uniform(0,1) 
+
+			# Compute test vertices
+			candidateA = (1-shiftA)*plan[anchorA]+shiftA*plan[anchorA+1] 
+			candidateB = (1-shiftB)*plan[anchorB]+shiftB*plan[anchorB+1] 
+
+			# If no collision, shorten path
+			if not DetectCollision(candidateA, candidateB, pointObs, axesObs):
+				while anchorB>anchorA:
+					plan.pop(anchorB) 
+					anchorB -= 1
+
+				plan.insert(anchorA+1, candidateB)
+				plan.insert(anchorA+1, candidateA)
 
 		if args.use_pyrobot:
 			# Vizualize your plan in PyRobot

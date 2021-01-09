@@ -95,7 +95,34 @@ class Locobot:
 		# Put you IK code from Homework 1 here
 
 		self.ForwardKin(ang)		
-		
+		Err = [0, 0, 0, 0, 0, 0]
+
+		for s in range (1000):
+			print(f'Step:{s}')
+			# compute rotation error (radian)
+			rErrR = np.matmul(TGoal[0:3, 0:3], np.transpose(self.Tcurr[-1][0:3, 0:3]))  # R_err = R_goal * RT_ECurr
+			rErrAxis, rErrAng = rt.R2axisang(rErrR)  # Convert to axis angle form
+			print(f'Pos Error(m): {rErrAxis}, Rotation Error(rad):{rErrAng}')
+
+			# limit rotation angle
+			if rErrAng > 0.1: 
+				rErrAng = 0.1 * np.pi / 180 # 0.1 deg
+			if rErrAng < 0.1:
+				rErrAng = -0.1 * np.pi / 180
+
+			rErr = [rErrAxis[0] * rErrAng, rErrAxis[1] * rErrAng, rErrAxis[2] * rErrAng]
+
+			# compute and limit translation error (compute position error (meter))
+			xErr = TGoal[0:3,3] - self.Tcurr[-1][0:3,3]
+			if np.linalg.norm(xErr) > 0.01:
+				xErr = xErr * 0.01 / np.linalg.norm(xErr)
+
+			Err[0:3]=xErr
+			Err[3:6]=rErr
+			self.q[0:-1] = self.q[0:-1] + 0.1 * np.matmul(np.transpose(self.J), Err)
+			self.ForwardKin(self.q[0:-1])
+
+
 		return self.q[0:-1], Err
 
 
@@ -103,20 +130,35 @@ class Locobot:
 		# implement random sampling of robot joint configurations
 		# Use code from Homework 2
 		q=[]		
-		
+		assert len(self.qmax) == len(self.qmin)
+
+		for i in range(len(self.qmax)):
+			q_1 = np.random.unifor(self.qmin[i],self.qmax[i])
+			q.append(q_1)
+
 		return q
 
 
 	def CompCollisionBlockPoints(self,ang):
 		# Use your FK implementation here to compute collision boxes for the robot arm 
 		# Use code from Homework 2
-		
-		pass
+		self.ForwardKin(ang)
 
-		
+		# Compute current collision boxes for arm
+		for i in range(len(self.Cdesc)):
+			# joint frame and local box transform
+			self.Tcoll[i] = np.matmul(self.Tcurr[self.Cidx[i]],self.Tblock[i])
+			self.Cpoints[i], self.Caxes[i] = rt.BlockDesc2Points(self.Tcoll[i], selfCDim[i])
+					
 	def DetectCollision(self, ang, pointsObs, axesObs):	
 		# implement collision detection using CompCollisionBlockPoints() and rt.CheckBoxBoxCollision()
 		# Use code from Homework 2
+		self.CompCollisionBlockPoints(ang)
+
+		for i in range(len(self.Cpoints)):
+			for j in range(len(pointsObs)):
+				if rt.CheckBoxBoxCollision(self.Cpoints[i],self.Caxes[i],pointsObs[j],axesObs[j]):
+					return True
 
 		return False
 
