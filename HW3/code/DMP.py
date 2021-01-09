@@ -52,6 +52,7 @@ class DMP_trajectory_generator:
         output: dmp trajectory based on starting position and learned weights
         '''
         q0 = np.zeros(5) # starting joint positions
+        q=q0
         q_goal = np.array([0,0,0.7,3,1]) # goal joint positions - feel free to play around with this!
         qd = np.zeros(5)
         qdd = np.zeros(5)
@@ -76,6 +77,8 @@ class DMP_trajectory_generator:
             qdd_traj.append(qdd)
             qd = qd + qdd * self.dt
             qd_traj.append(qd)
+            q = q + qd * self.dt
+            q_traj.append(q)
 
         dmp_trajectory = q_traj, qd_traj, qdd_traj
 
@@ -94,18 +97,22 @@ if __name__ == "__main__":
           f'dq: {dq}\n'
           f'ddq: {ddq}\n')
     
-    dmp_trajectory_generator = DMP_trajectory_generator(6)
+    dmp_trajectory_generator = DMP_trajectory_generator(5)
     dmp_trajectory_generator.learn_weights_from_raw_trajectory(q,dq,ddq)
 
     q_traj, dq_traj, ddq_traj = dmp_trajectory_generator.generate_dmp_trajectory()
     
+    print(f'q: {q_traj}\n'
+          f'dq: {dq_traj}\n'
+          f'ddq: {ddq_traj}\n')
+
     # TODO: Plot your DMP trajectory
-    import seaborn as seaborn
+    import seaborn as sb
     joints = list(zip(*q_traj))
     x = np.linspace(1,len(joints[0]),len(joints[0]))
-    seaborn.set()
+    sb.set()
     plt.xlabel("Time Step")
-    plt.ylabel("Joint Configuration(rad)")
+    plt.ylabel("Joint Configuration (rad)")
     plt.title("Time History Plot of Joints")
     joint = 0
     for y in joints:
