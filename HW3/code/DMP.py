@@ -34,7 +34,7 @@ class DMP_trajectory_generator:
             Phi=Phi/np.sum(Phi)
             PHI.append(Phi)
             
-            f=((ddq[k]*T**2)-K*(q[-1]-q[k])+B*(dq[k]*T))/(q[-1]-q[0])
+            f=((ddq[k]*T**2)-self.K*(q[-1]-q[k])+self.B*(dq[k]*T))/(q[-1]-q[0])
             F.append(f)
 
         # calculate weights via linear regression
@@ -56,10 +56,29 @@ class DMP_trajectory_generator:
         qd = np.zeros(5)
         qdd = np.zeros(5)
 
+        q_traj=[q]
+        qd_traj=[qd]
+        qdd_traj = [qdd]
+
         t = 0
         for i in range(1000):
             t = t + self.dt
             # TODO: Write your code here
+            if t <= self.T:
+                phi = [math.exp(-0.5*((t/self.T)-c)**2/self.H) for c in self.C]
+                phi = phi / np.sum(phi)
+                f = np.dot(phi,self.weights)
+            else:
+                f = 0 #set force = 0 after t reaches T to ensure sys goes to goal
+
+            #simulate spring and damper to get trajectory
+            qdd = self.K * (q_goal - q) / self.T ** 2 - self.B * qd / self.T + (q_goal - q0) * f / self.T**2
+            qdd_traj.append(qdd)
+            qd = qd + qdd * self.dt
+            qd_traj.append(qd)
+
+        dmp_trajectory = q_traj, qd_traj, qdd_traj
+
 
         return dmp_trajectory 
 
@@ -71,4 +90,26 @@ if __name__ == "__main__":
     ddq = np.load('ddq.npy')
 
     # TODO: Fit weights to the provided trajectory and use the learned weights to generate a DMP trajectory
+    print(f'q: {q}\n'
+          f'dq: {dq}\n'
+          f'ddq: {ddq}\n')
+    
+    dmp_trajectory_generator = DMP_trajectory_generator(6)
+    dmp_trajectory_generator.learn_weights_from_raw_trajectory(q,dq,ddq)
+
+    q_traj, dq_traj, ddq_traj = dmp_trajectory_generator.generate_dmp_trajectory()
+    
     # TODO: Plot your DMP trajectory
+    import seaborn as seaborn
+    joints = list(zip(*q_traj))
+    x = np.linspace(1,len(joints[0]),len(joints[0]))
+    seaborn.set()
+    plt.xlabel("Time Step")
+    plt.ylabel("Joint Configuration(rad)")
+    plt.title("Time History Plot of Joints")
+    joint = 0
+    for y in joints:
+        plt.plot(x,y,label=f'Joint {joint}')
+        joint += 1
+    plt.legend()
+    plt.show()
